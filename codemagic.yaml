@@ -4,8 +4,6 @@ workflows:
     max_build_duration: 60
     environment:
       flutter: stable
-      android:
-        image: latest
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -24,8 +22,7 @@ workflows:
         script: flutter pub get
 
       - name: Build release APK
-        script: |
-          flutter build apk --release
+        script: flutter build apk --release
 
       - name: Set up Keystore
         script: |
@@ -41,8 +38,7 @@ workflows:
           build/app/outputs/flutter-apk/app-release.apk $CM_KEY_ALIAS
 
       - name: Verify APK signature
-        script: |
-          jarsigner -verify build/app/outputs/flutter-apk/app-release.apk
+        script: jarsigner -verify build/app/outputs/flutter-apk/app-release.apk
 
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
