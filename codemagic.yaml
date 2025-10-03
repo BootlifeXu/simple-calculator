@@ -1,10 +1,9 @@
 workflows:
-  android-workflow:
-    name: Build Android Release APK
+  android-release:
+    name: Build & Sign Android Release APK
     max_build_duration: 60
     environment:
       flutter: stable
-      xcode: latest
       android:
         image: latest
     cache:
@@ -12,7 +11,7 @@ workflows:
         - ~/.gradle/caches
         - ~/.pub-cache
     scripts:
-      - name: Clean up old caches to prevent disk full
+      - name: Clean up old caches
         script: |
           echo "Cleaning Gradle and Flutter caches..."
           rm -rf ~/.gradle/caches/
@@ -22,12 +21,28 @@ workflows:
           flutter clean || true
 
       - name: Install dependencies
-        script: |
-          flutter pub get
+        script: flutter pub get
 
       - name: Build release APK
         script: |
           flutter build apk --release
+
+      - name: Set up Keystore
+        script: |
+          echo "Writing keystore from secure file..."
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/my-release-key.jks
+
+      - name: Sign APK
+        script: |
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+          -keystore $CM_BUILD_DIR/my-release-key.jks \
+          -storepass $CM_KEYSTORE_PASSWORD \
+          -keypass $CM_KEY_PASSWORD \
+          build/app/outputs/flutter-apk/app-release.apk $CM_KEY_ALIAS
+
+      - name: Verify APK signature
+        script: |
+          jarsigner -verify build/app/outputs/flutter-apk/app-release.apk
 
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
